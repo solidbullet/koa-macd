@@ -57,7 +57,7 @@ function handle(symbol,close0,cross,zeroAxis) {
 function get_kline(symbol) {
     return new Promise(resolve => {
         
-        let url = `${BASE_URL}/market/history/kline?period=${global.PeriodFromCus}&size=150&symbol=${symbol}`;
+        let url = `${BASE_URL}/market/history/kline?period=${global.PeriodFromCus}&size=2&symbol=${symbol}`;
         // console.log(url);
         http.get(url, {
             timeout: 2000,
@@ -67,6 +67,7 @@ function get_kline(symbol) {
             let json = JSON.parse(data);
             let t = json.ts;
             let kline = json.data;
+            console.log(kline)
             let close = kline.map(v => v.close)
             
             let MACD = ta.MACD(close,12,26,9);
