@@ -1,6 +1,5 @@
 const router = require('koa-router')()
 const ws = require('../crawler/restkline');
-const Controller = require('../controller/macdcontroller');
 const config = require('../config');
 
 router.get('/', async (ctx, next) => {

@@ -17,6 +17,7 @@
           .close0{font-weight:bold;color: green;font-size:1.2em;}
           .diff{font-weight:bold;color: red;font-size:1.2em;}
           .sky {color:red;background-color:lightblue;	padding:20px;font-family:"Courier New";}
+          .direct{color:green;padding:20px;font-family:"Courier New";font-weight:bold}
       </style>
 
    </head>
@@ -25,7 +26,7 @@
       <audio id = "qAudio" controls="controls" ng-click="playQAudio()" ng-src="http://music.163.com/song/media/outer/url?id=99904.mp3" type="audio/mpeg" ></audio>
 
     <table class="table">
-      <caption>数字货币行情监控</caption>
+      <caption>数字货币行情监控（显示24小时内历史数据）</caption>
      <thead>
         <tr>
            <th>币种</th>     
@@ -40,9 +41,9 @@
         <tr>
            <td class ='close0'>{{x.symbol}}</td>
            <td class ='close0'>{{x.close0 |number:4}}</td>
-           <td class ='diff'>{{x.cross}}</td>
-           <td class ='diff'>{{x.zeroAxis}}</td>
-           <td class ='diff'>{{x.createdAt | date:'yyyy-MM-dd hh:mm:ss'}}</td>
+           <td ng-class='{direct:{{x.cross == "死叉"}}}' class ='diff'>{{x.cross}}</td>
+           <td ng-class='{direct:{{x.zeroAxis == "下穿零轴"}}}' class ='diff'>{{x.zeroAxis}}</td>
+           <td>{{x.createdAt | date:'yyyy-MM-dd hh:mm:ss'}}</td>
            <td>{{x.period}}</td>
         </tr>
   

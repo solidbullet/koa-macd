@@ -4,30 +4,25 @@ const Promise = require('bluebird');
 const ta = require('ta-lib');
 const MyIndicator = require('../indicator/MacdCross')
 const db = require('../crud')
-var Macd = require('../models/macd.model');
+const Macd = require('../models/macd.model');
+const config = require('../config');
 
 // const BASE_URL = 'https://api.huobi.pro';
 // 此地址用于国内不翻墙调试
-const BASE_URL = 'https://api.huobi.br.com';
-const average = arr => arr.reduce((acc, val) => acc + val, 0) / arr.length;
+const symbols = config['SYMBOLS'];
+let t_Time = {};//临时存放时间戳，防止一直往数据库写数据，当时间大于period的时候才往数据库写数据
+symbols.forEach(v=>t_Time[v] = 0); //INIT   t_Time
 var orderbook = {};
-const crypto_symbols = ['ttusdt','topusdt','cvcusdt','btsusdt','paiusdt','btcusdt','ethusdt','atomusdt','irisusdt','rsrusdt','bttusdt'];
-//['eosusdt','btcusdt','xmrusdt','bsvusdt','ltcusdt','trxusdt','ethusdt','atomusdt','irisusdt','rsrusdt','bttusdt'];
-var t_Time = {};//临时存放时间戳，防止一直往数据库写数据，当时间大于period的时候才往数据库写数据
-crypto_symbols.forEach(v=>t_Time[v] = 0); //INIT   t_Time
 exports.OrderBook = orderbook;
-
-if(global.PeriodFromCus == undefined) global.PeriodFromCus = '4hour';
 
 const isNewBar = (now,last) =>{
     let time_diff = (now - last)/60000;
     let periods = {"5min":5,"15min":15,"60min":60,"4hour":4*60,"1day":24*60};
-    let minuts = periods[global.PeriodFromCus];
-
+    let minuts = periods[config['PERIOD']];
     return time_diff > minuts + 2; //增加两分钟避免延迟造成的重复插入数据库
 }
 
-const Save = (val) =>{ //{symbol:symbol,close0:close0,cross:cross,zeroAxis:zeroAxis,period:global.PeriodFromCus,createdAt:time};
+const Save = (val) =>{ 
     if(val['cross'] == '金叉' || val['cross'] == '死叉' || val['zeroAxis'] == '上穿零轴' || val['zeroAxis']== '下穿零轴'){      
         let time = new Date();
         let symbol = val['symbol'];
@@ -43,40 +38,32 @@ const Save = (val) =>{ //{symbol:symbol,close0:close0,cross:cross,zeroAxis:zeroA
 }
 
 function handle(symbol,close0,cross,zeroAxis) {
-    let res = {symbol:symbol,close0:close0,cross:cross,zeroAxis:zeroAxis,period:global.PeriodFromCus};
+    
+    let res = {symbol:symbol,close0:close0,cross:cross,zeroAxis:zeroAxis,period:config['PERIOD']};
+    // console.log(res);
     orderbook[symbol] = res;
     Save(res);
-    // for ( let s in orderbook ) {
-    //     Save(orderbook[s]);
-    // }
-    // console.log(orderbook[symbol]);
-    // TODO 根据数据生成你想要的K线 or whatever...
-    // TODO 记录数据到你的数据库或者Redis
 }
 
 function get_kline(symbol) {
     return new Promise(resolve => {
         
-        let url = `${BASE_URL}/market/history/kline?period=${global.PeriodFromCus}&size=2&symbol=${symbol}`;
+        let url = `${config['BASE_URL']}/market/history/kline?period=${config['PERIOD']}&size=${config['SIZE']}&symbol=${symbol}`; //${global.PeriodFromCus}
         // console.log(url);
         http.get(url, {
             timeout: 2000,
             gzip: true
         }).then(data => {
-            // console.log(data);
             let json = JSON.parse(data);
             let t = json.ts;
             let kline = json.data;
-            console.log(kline)
-            let close = kline.map(v => v.close)
             
+            let close = kline.map(v => v.close)  
             let MACD = ta.MACD(close,12,26,9);
             let dif = MACD.macd.slice(0,10);
             let dea = MACD.signal.slice(0,10);
-            let macd = MACD.histogram.map((x)=> x*2).slice(0,10);
+            let macd = MACD.histogram.map((x)=> x*2).slice(0,10);           
             let [cross,zeroAxis] = [MyIndicator.IsCross(dif,dea),MyIndicator.IsBreakZero(macd)]
-            // Save(symbol,cross,zeroAxis);
-            // console.log(compare(dif,dea));
             handle(symbol, close[0],cross,zeroAxis);
             resolve(null);
         }).catch(ex => {
@@ -88,8 +75,9 @@ function get_kline(symbol) {
 
 function run() {
     // console.log(`run ${moment()}`);
-
-    Promise.map(crypto_symbols, item => {
+    // console.log(config['PERIOD']);
+    
+    Promise.map(config['SYMBOLS'], item => {
         return get_kline(item);
     }).then(() => {
         setTimeout(run, 2000);

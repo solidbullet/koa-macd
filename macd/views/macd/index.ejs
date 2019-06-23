@@ -24,12 +24,12 @@
    <div class = "container" ng-app="myApp" ng-controller="siteCtrl">
       <!-- <audio id = "qAudio" controls="controls" ng-click="playQAudio()" ng-src="http://music.163.com/song/media/outer/url?id=99904.mp3" type="audio/mpeg" ></audio> -->
 
-      <!-- <form role="form">
+      <form role="form">
          <div class="form-group">
             <label for="name">选择周期</label>
             <select class="form-control" ng-init="selectedName = periods[2]" ng-change="selectChange();" ng-model="selectedName" ng-options="x for x in periods"></select>
          </div>
-      </form> -->
+      </form>
 
     <table class="table">
       <caption>数字货币行情监控</caption>
@@ -37,9 +37,8 @@
         <tr>
            <th>币种</th>
            <th>当前价格</th>
-           <th>金叉预警</th>
+           <th>M5周期金叉预警</th>
            <th>穿越零轴预警</th>
-           <th>周期</th>
         </tr>
      </thead>
      <tbody ng-repeat="x in data|orderBy:'diff':'desc'">
@@ -48,7 +47,6 @@
            <td class ='close0'>{{x.close0 |number:4}}</td>
            <td class ='diff'>{{x.cross}}</td>
            <td class ='diff'>{{x.zeroAxis}}</td>
-           <td class ='diff'>{{x.period}}</td>
         </tr>
   
      </tbody>
