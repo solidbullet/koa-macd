@@ -25,29 +25,25 @@
       <audio id = "qAudio" controls="controls" ng-click="playQAudio()" ng-src="http://music.163.com/song/media/outer/url?id=99904.mp3" type="audio/mpeg" ></audio>
 
     <table class="table">
-      <caption>数字货币行情监控（显示24小时内历史数据）</caption>
+      <caption>数字货币行情监控</caption>
      <thead>
         <tr>
            <th>币种</th>     
            <th>当时价格</th>
-           <th>价格突破强度</th>
-           <th>成交量突破强度</th>
-           <th>成交量是前N倍数</th>
-           <th>周期</th>
+           <th>金叉预警</th>
+           <th>穿越零轴预警</th>
            <th>时间戳</th>
-           <th>价格动态</th>
+           <th>周期</th>
         </tr>
      </thead>
-     <tbody ng-repeat="x in data|orderBy:'createdAt':'desc'">
+     <tbody ng-repeat="x in data|orderBy:'diff':'desc'">
         <tr>
            <td class ='close0'>{{x.symbol}}</td>
            <td class ='close0'>{{x.close0 |number:4}}</td>
-           <td class ='diff'>{{x.diff |number:2}}</td>
-           <td class ='diff'>{{x.vol_breakup |number:2}}</td>
-           <td class ='diff'>{{x.bs |number:2}}</td>
+           <td class ='diff'>{{x.cross}}</td>
+           <td class ='diff'>{{x.zeroAxis}}</td>
+           <td class ='diff'>{{x.createdAt | date:'yyyy-MM-dd hh:mm:ss'}}</td>
            <td>{{x.period}}</td>
-           <td>{{x.createdAt | date:'yyyy-MM-dd hh:mm:ss'}}</td>
-           <td>{{x.direct }}</td>
         </tr>
   
      </tbody>
@@ -83,7 +79,7 @@
 	app.controller('siteCtrl', function($scope, $http,$interval) {
 
 	  $interval(function(){
-      let url = "http://127.0.0.1:8080/users/get24hour";
+      let url = "http://127.0.0.1:3000/users/get24hour";
 		$http.get(url)
 		  .success(function (response) {
             $scope.data = response;

@@ -58,7 +58,7 @@
            <td>{{x.close1|number:4}}</td>
            <td>{{x.avg|number:2}}</td>
            <td>{{x.vol_1|number:2}}</td>
-           <td>{{x.vol_1 * x.close1 |number:2 |currency:'￥'}}</td>
+           <td>{{(x.vol_1 * x.close1)/10000|number:2 |currency:'￥'}}</td>
            
 
 
@@ -100,7 +100,7 @@
       
       
 	  $interval(function(){
-		$http.get("http://127.0.0.1:8080/getjson")
+		$http.get("http://127.0.0.1:8888/getjson")
 		  .success(function (response) {
          for(let p in response){  // console.log(p);//   取得是key值 // console.log(obj[p]);//取得是value值
                if(response[p].diff > 8 || response[p].bs> 5 || response[p].vol_breakup> 10){ 

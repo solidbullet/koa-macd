@@ -2,20 +2,67 @@ const moment = require('moment');
 const http = require('../framework/httpClient');
 const Promise = require('bluebird');
 const timeblock  = require('../tools/TimeBlock');
+const CAL_TOOL = require('../tools/caculator')
+const config = require('../config');
+const db = require('../crud')
+const STD = require('../models/std.model');
 
-
-let date = new Date();
+const symbols = config['SYMBOLS'];
 // let time_test = '2019-06-21 14:14:00';
 // let date0 = new Date(time_test);
-if(!timeblock.onMonitor(date)) return;
+// if(!timeblock.onMonitor(new Date())) return;
 
-// const BASE_URL = 'http://stock2.finance.sina.com.cn/futures/api/json.php';
-// 此地址用于国内不翻墙调试
-const BASE_URL = 'http://stock2.finance.sina.com.cn/futures/api/json.php';
+let t_Time = {};//临时存放时间戳，防止一直往数据库写数据，当时间大于period的时候才往数据库写数据
+symbols.forEach(v=>t_Time[v] = 0); //INIT   t_Time
+
+const isNewBar = (now,last) =>{
+    let time_diff = (now - last)/60000;
+    let periods = {"5min":5,"15min":15,"60min":60,"4hour":4*60,"1day":24*60};
+    let minuts = periods[config['PERIOD']];
+    return time_diff > minuts + 2; //增加两分钟避免延迟造成的重复插入数据库
+}
+
+const Save = (val) =>{ 
+    if(val['bs'] >= config['VOL_BS']  || val['diff'] >= config['PRICE_BREAK'] || val['vol_breakup'] >= config['VOL_BREAK']){      
+        let time = new Date();
+        let symbol = val['symbol'];
+        if(isNewBar(time,t_Time[symbol])){ //t_time ,临时时间变量必须要放到对象，跟不同的币种对应，不然的话多币种共用一个变量就会出问题
+            t_Time[symbol]= time;
+            // val['createdAt'] = time;
+            let STD_signal = new STD(val);
+            db.SaveCross(STD_signal).then(v=> {
+                console.log(v);
+            })
+        } 
+    }
+}
+function get_arr(symbol,kline){ //通过k线序列计算出数组，在前端页面展示 
+    let list_vol = [];
+    let list_diff = [];
+    // 依次是行情时间0，开盘价1、最高价2、最低价3、收盘价4、成交量5。
+    for(let i =0;i < kline.length;i++)
+    {
+        let [open,close,vol] = [parseFloat(kline[i][1]),parseFloat(kline[i][4]),parseFloat(kline[i][5])];
+        list_vol.push(vol) //成交量
+        list_diff.push(Math.abs(close - open));
+    }
+    let close0 = parseFloat(kline[0][4]);
+    let close1 = parseFloat(kline[1][4]);
+    let vol_0 = list_vol.shift()
+    let avg = CAL_TOOL.AVERAGE(list_vol);
+    let bs = (avg != 0 )?list_vol[0]/avg:0;
+    let diff = CAL_TOOL.BREAKUP(list_diff);
+    let vol_breakup = CAL_TOOL.BREAKUP(list_vol);
+    let direct = '';
+    direct = (close0 > close1)?'上涨':'下跌';
+    let data = {"symbol":symbol,"close0":close0,"close1":close1,"avg":avg,"vol_1":list_vol[0],"bs":bs,"diff":diff,'vol_breakup':vol_breakup,'period':config['PERIOD'],direct:direct};
+    console.log(data)
+    return data;
+}
+
 // http://stock2.finance.sina.com.cn/futures/api/json.php/IndexService.getInnerFuturesMiniKLine5m?symbol=TA1909
 // 依次是行情时间，开盘价、最高价、最低价、收盘价、成交量。
 
-const average = arr => arr.reduce((acc, val) => acc + val, 0) / arr.length;
 var orderbook = {};
 
 exports.OrderBook = orderbook;
@@ -29,7 +76,7 @@ function handle(symbol, kline) {
 
 function get_kline(symbol) {
     return new Promise(resolve => {
-        let url = `${BASE_URL}/IndexService.getInnerFuturesMiniKLine5m?symbol=${symbol}`;
+        let url = `${config['BASE_URL']}/IndexService.getInnerFuturesMiniKLine5m?symbol=${symbol}`;
         // console.log(url);
         http.get(url, {
             timeout: 2000,
@@ -50,60 +97,13 @@ function get_kline(symbol) {
 
 function run() {
     // console.log(`run ${moment()}`);
-    let list = ['TA1909','RB1909','EG1909'];
-    Promise.map(list, item => {
+    Promise.map(symbols, item => {
         return get_kline(item);
     }).then(() => {
         setTimeout(run, 2000);
     });
-    // get_kline('btcusdt').then(data => {
-    //        //return  data;
-    //        console.log(data);
-    //     })//.then(data=>console.log(data))
+
 }
 
 run();
 
-function get_arr(symbol,kline){ //通过k线序列计算出数组，在前端页面展示
-    
-    let list_vol = [];
-    let list_diff = [];
-    // 依次是行情时间0，开盘价1、最高价2、最低价3、收盘价4、成交量5。
-    for(let i =0;i < kline.length;i++)
-    {
-        list_vol.push(kline[i][5]) //成交量
-        list_diff.push(Math.abs(kline[i][4] - kline[i][1]));
-    }
-    let close0 = parseFloat(kline[0][4]);
-    // console.log('close0',close0);
-    let close1 = parseFloat(kline[1][4]);
-    // console.log(Indicator.SMA(list, 5));
-    // console.log(macd(list, 26, 12, 9));
-    let list_vol_1 = list_vol.map(value => parseFloat(value));
-    let vol_0 = list_vol_1.shift()
-    let avg = average(list_vol_1);
-    let bs = (avg != 0 )?list_vol[0]/avg:0;
-    let data = {"symbol":symbol,"close0":close0,"close1":close1,"avg":avg,"vol_1":list_vol[0],"bs":bs,"diff":BREAKUP(list_diff),'vol_breakup':BREAKUP(list_vol)};
-    return data;
-
-}
-
-var STDEVP = values => { 
-    var avg = average(values)
-    var squareDiffs = values.map(value => Math.pow(value - avg, 2))
-    return Math.sqrt(average(squareDiffs))
-  }
-
-var BREAKUP = list =>{ //计算：最近K线实体长度/前面11根K线实体长度标准差的,反应突破强度
-    list_1 = list.map(value => parseFloat(value));
-    
-    let diff0 = list_1[0] ; //最近一根K的实体长度
-    list_1.shift()
-    
-    let result = STDEVP(list_1); //前面N根K的实体长度的标准差
-    
-    let ratio = 0;
-    if (result != 0) ratio = diff0/result;
-    // console.log(ratio,'result',result,'diffo',diff0);
-    return ratio;
-}

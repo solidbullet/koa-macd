@@ -38,7 +38,7 @@
            <th>价格动态</th>
         </tr>
      </thead>
-     <tbody ng-repeat="x in data|orderBy:'createdAt':'desc'">
+     <tbody ng-repeat="x in data|orderBy:'diff':'desc'">
         <tr>
            <td class ='close0'>{{x.symbol}}</td>
            <td class ='close0'>{{x.close0 |number:4}}</td>

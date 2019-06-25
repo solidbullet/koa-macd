@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const MacdSchema = new Schema({
+const STDSchema = new Schema({
   symbol: { type: String, required: true },
   //categoryId: { type: Schema.Types.ObjectId,required: true },  // 文章类别
   close0: { type: Number,default:0},  
@@ -13,8 +13,8 @@ const MacdSchema = new Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-var Macd = mongoose.model('Macd', MacdSchema)
+var STD = mongoose.model('STD', STDSchema)
 
 // 暴露接口
-module.exports = Macd;
+module.exports = STD;
 

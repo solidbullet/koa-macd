@@ -1,9 +1,9 @@
-const moment = require('moment');
+
 const http = require('../framework/httpClient');
 const Promise = require('bluebird');
 const CAL_TOOL = require('../indicator/caculator')
 const db = require('../crud')
-const Macd = require('../models/macd.model');
+const STD = require('../models/std.model');
 const config = require('../config');
 
 var orderbook = {};
@@ -29,8 +29,8 @@ const Save = (val) =>{
         if(isNewBar(time,t_Time[symbol])){ //t_time ,临时时间变量必须要放到对象，跟不同的币种对应，不然的话多币种共用一个变量就会出问题
             t_Time[symbol]= time;
             // val['createdAt'] = time;
-            let macd_signal = new Macd(val);
-            db.SaveCross(macd_signal).then(v=> {
+            let STD_signal = new STD(val);
+            db.SaveCross(STD_signal).then(v=> {
                 console.log(v);
             })
         } 

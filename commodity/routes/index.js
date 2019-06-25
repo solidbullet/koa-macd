@@ -4,7 +4,7 @@ const config = require('../config');
 
 router.get('/', async (ctx, next) => {
   await ctx.render('index', {
-    title: '量价突破监控'
+    title: '期货量价突破监控'
   })
 })
 
