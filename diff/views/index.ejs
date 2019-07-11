@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title><%= title %></title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" charset="utf-8">
+      <!-- 引入 Bootstrap -->
+      <link href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+ 
+      <!-- HTML5 Shiv 和 Respond.js 用于让 IE8 支持 HTML5元素和媒体查询 -->
+      <!-- 注意： 如果通过 file://  引入 Respond.js 文件，则该文件无法起效果 -->
+      <!--[if lt IE 9]>
+         <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+         <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+      <![endif]-->
+      <script src="https://cdn.staticfile.org/angular.js/1.4.6/angular.min.js"></script>
+      <style>
+          .close0{font-weight:bold;color: green;font-size:1.2em;}
+          .diff{font-weight:bold;color: red;font-size:1.2em;}
+          .sky {color:red;background-color:lightblue;	padding:20px;font-family:"Courier New";}
+          .direct{color:red;padding:20px;font-family:"Courier New";font-weight:bold}
+      </style>
+
+   </head>
+   <body>
+   <div class = "container" ng-app="myApp" ng-controller="siteCtrl">
+    <!-- <h3>当前k线是前面5根k线成交量的倍数: <span class="bs">{{bs}}</span> </h3>
+    <h3><small>   成交量: {{vol}}</small>           <small>当前价格: {{price}}</small></h3> -->
+    请输入usdt价格： <input type="number" ng-model="usdt"/>
+    <h3>当前价格约: {{close0 * usdt  |number:2}} ; 涨跌幅: {{rise |number:2}} % ;当前价差： {{diff | number :2}}</h3>
+    <table class="table">
+      <caption>商户收币信息</caption>
+     <thead>
+        <tr>
+           <th>收币价格</th>
+           <th>收币数量</th>
+           <th>收币商户</th>
+        </tr>
+     </thead>
+     <tbody ng-repeat="x in ad_buy|orderBy:'price'">  
+        <tr>
+           <td>{{x.price | number:3}}</td>
+           <td>{{x.tradeCount | number:3}}</td>
+           <td>{{x.userName}}</td>
+        </tr>
+     </tbody>
+  </table>
+
+  <table class="table">
+   <caption>商户卖币信息</caption>
+  <thead>
+     <tr>
+        <th>收币价格</th>
+        <th>收币数量</th>
+        <th>收币商户</th>
+     </tr>
+  </thead>
+  <tbody ng-repeat="x in ad_sell|orderBy:'price'">  
+     <tr>
+        <td>{{x.price | number:3}}</td>
+        <td>{{x.tradeCount | number:3}}</td>
+        <td>{{x.userName}}</td>
+     </tr>
+  </tbody>
+</table>
+
+    </div>
+      <!-- jQuery (Bootstrap 的 JavaScript 插件需要引入 jQuery) -->
+      <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+      <!-- 包括所有已编译的插件 -->
+      <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+   </body>
+   
+    <script>
+   var app = angular.module('myApp', []);
+   let audio = document.getElementById("qAudio");
+	app.controller('siteCtrl', function($scope, $http,$interval) {
+	  $interval(function(){
+		$http.get("http://127.0.0.1:8080/getjson")
+		  .success(function (res) {
+         $scope.close0 = res[0][0].close;
+         let close1 = res[0][1].close;
+         $scope.rise = (close1)?100*($scope.close0 - close1)/close1:0;
+         $scope.ad_buy = res[1].slice(0,3);
+         $scope.ad_sell = res[2].slice(0,3);
+         $scope.diff = res[1][0].price -  res[2][0].price ;
+         if(!$scope.usdt) $scope.usdt = 7;
+		  });//end for http.get
+	  },1800)// end for interval
+	  
+	});
+	</script>
+</html>
